@@ -41,7 +41,6 @@ GLOBAL_COMP_ENGINE = CompetitionEngine()
 class LiveStreamingRoom(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # إطلاق نبضة الدعم التنافسي الخارق تلقائياً عند التمهيد لاختبار السيرفر
         Clock.schedule_once(self.auto_test_matrix, 0.2)
         
     def auto_test_matrix(self, dt):
@@ -57,7 +56,6 @@ class LiveStreamingRoom(Screen):
         print(f"⚡ [هيمنة الوكالات الأربع]: وكالة NH السيادية تقفز إلى ({agencies['NH']:,} Pts)")
         print("--------------------------------------------------")
         
-        # هندسة الإغلاق الذاتي الصامت لإنهاء الخلية فور إتمام المهمة بنجاح
         print("🎉 تم فحص واستقرار المعمارية برمجياً. إغلاق آمن ومؤتمت للخلية...")
         MDApp.get_running_app().stop()
 
