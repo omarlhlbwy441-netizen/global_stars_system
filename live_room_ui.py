@@ -14,6 +14,44 @@ from kivy.utils import get_color_from_hex
 
 Window.size = (360, 640)
 
+# ==========================================
+# [نواة نظام العائلات البرمجي المربوط]
+# ==========================================
+class FamilySystem:
+    def __init__(self):
+        # قاعدة بيانات افتراضية سريعة للعائلات المعتمدة في المنظومة
+        self.families = {
+            "ARAB_STARS": {
+                "name": "👑 عائلة نجوم العرب",
+                "leader": "Leader Omar",
+                "level": 5,
+                "xp": 12500,
+                "badge_color": "#FFD54F"
+            },
+            "VIP_KINGS": {
+                "name": "💎 ملوك الـ VIP",
+                "leader": "User_441",
+                "level": 3,
+                "xp": 6200,
+                "badge_color": "#29B6F6"
+            }
+        }
+
+    def add_xp(self, family_id, amount):
+        """إضافة نقاط خبرة للعائلة ورفع مستواها تلقائياً عند الدعم"""
+        if family_id in self.families:
+            self.families[family_id]["xp"] += amount
+            # معادلة ترقية المستوى تلقائياً لكل 5000 نقطة
+            new_lvl = (self.families[family_id]["xp"] // 5000) + 1
+            if new_lvl > self.families[family_id]["level"]:
+                self.families[family_id]["level"] = new_lvl
+                return True
+        return False
+
+# تهيئة النظام عالمياً لربطه بكافة غرف البث
+GLOBAL_FAMILY_SYS = FamilySystem()
+
+
 class LiveStreamingRoom(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -27,7 +65,7 @@ class LiveStreamingRoom(Screen):
             pos_hint={"center_x": 0.5, "center_y": 0.5}
         )
         video_placeholder_label = MDLabel(
-            text="🎥 [ LIVE STREAM FEED ]\nConnecting to Secure Media Server...",
+            text="🎥 [ LIVE STREAM FEED ]\nFamily & Agency Framework Active",
             halign="center",
             theme_text_color="Custom",
             text_color=get_color_from_hex("#757575"),
@@ -37,9 +75,9 @@ class LiveStreamingRoom(Screen):
         main_layout.add_widget(video_bg)
         main_layout.add_widget(video_placeholder_label)
         
-        # 2. شريط الحالة العلوي (الوكالة والماسات المعتمدة)
+        # 2. شريط الحالة العلوي المحدث (يعرض تفاصيل المذيع، الوكالة، والأسرة)
         top_bar = MDCard(
-            size_hint=(0.95, 0.1),
+            size_hint=(0.95, 0.12),
             pos_hint={"center_x": 0.5, "top": 0.98},
             md_bg_color=get_color_from_hex("#1A1A1A"),
             radius=[15, 15, 15, 15],
@@ -55,16 +93,19 @@ class LiveStreamingRoom(Screen):
             theme_text_color="Custom",
             text_color=get_color_from_hex("#FFFFFF")
         )
-        agency_badge = MDLabel(
-            text="⚡ Agency: NH Mapped",
+        
+        # ربط واجهة العائلة الحالية والوكالة
+        current_family = GLOBAL_FAMILY_SYS.families["ARAB_STARS"]
+        status_text = f"⚡ Agency: NH  |  {current_family['name']} (Lvl {current_family['level']})"
+        self.system_badge = MDLabel(
+            text=status_text,
             font_style="Caption",
             theme_text_color="Custom",
             text_color=get_color_from_hex("#00E676")
         )
         broadcaster_info.add_widget(broadcaster_name)
-        broadcaster_info.add_widget(agency_badge)
+        broadcaster_info.add_widget(self.system_badge)
         
-        # تعديل الخاصية هنا من user_font_size إلى icon_size لحل المشكلة تماماً
         diamond_counter = BoxLayout(orientation="horizontal", size_hint_x=0.4, spacing=5, pos_hint={"center_y": 0.5})
         diamond_icon = MDIconButton(
             icon="diamond", 
@@ -86,7 +127,7 @@ class LiveStreamingRoom(Screen):
         top_bar.add_widget(top_bar_layout)
         main_layout.add_widget(top_bar)
         
-        # 3. نافذة المحادثة الفورية (Live Chat)
+        # 3. نافذة المحادثة الفورية (Live Chat) مع دعم إشعارات العائلات
         chat_scroll = ScrollView(
             size_hint=(0.9, 0.25),
             pos_hint={"center_x": 0.5, "bottom": 0.15},
@@ -96,13 +137,13 @@ class LiveStreamingRoom(Screen):
         self.chat_box = BoxLayout(orientation="vertical", spacing=5, size_hint_y=None)
         self.chat_box.bind(minimum_height=self.chat_box.setter('height'))
         
-        self.add_chat_message("⚙️ SYSTEM", "Unified Live Matrix initialized via Core Process.", "#FFD54F")
-        self.add_chat_message("👤 User_441", "This platform's speed is insane! Higher than Bigo! 🔥", "#FFFFFF")
+        self.add_chat_message("⚙️ SYSTEM", "Family Integration Core successfully linked.", "#FFD54F")
+        self.add_chat_message("🛡️ GH_Agent", "All system processes mapped securely.", "#00E676")
         
         chat_scroll.add_widget(self.chat_box)
         main_layout.add_widget(chat_scroll)
         
-        # 4. لوحة الدعم الفوري السفلي
+        # 4. لوحة الدعم السفلي الإستراتيجية
         bottom_dock = BoxLayout(
             orientation="horizontal",
             size_hint=(0.95, 0.08),
@@ -111,10 +152,10 @@ class LiveStreamingRoom(Screen):
         )
         
         gift_btn = MDRaisedButton(
-            text="🎖️ Send Throne Bank Medal",
+            text="🎖️ Send Family Throne Medal",
             md_bg_color=get_color_from_hex("#D4AF37"),
             size_hint_x=0.7,
-            on_release=self.trigger_throne_gift
+            on_release=self.trigger_family_throne_gift
         )
         
         exit_btn = MDIconButton(
@@ -143,11 +184,27 @@ class LiveStreamingRoom(Screen):
         )
         self.chat_box.add_widget(message_label)
 
-    def trigger_throne_gift(self, instance):
+    def trigger_family_throne_gift(self, instance):
+        """معالجة الدعم المالي لعداد المذيع ونقاط خبرة العائلة في نفس النبضة"""
+        # 1. تحديث عداد المنح الماسية للمذيع (+50,000 جوهرة)
         current_diamonds = int(self.diamond_label.text.replace(",", ""))
         new_balance = current_diamonds + 50000
         self.diamond_label.text = f"{new_balance:,}"
-        self.add_chat_message("🎖️ CROWN GIFT", "Leader Omar deployed 'وسام بنك العرش' (+50,000 💎)!", "#D4AF37")
+        
+        # 2. ربط ودفع نقاط الخبرة لعائلة "نجوم العرب" (+10000 XP) ومتابعة الترقية
+        family_id = "ARAB_STARS"
+        is_leveled_up = GLOBAL_FAMILY_SYS.add_xp(family_id, 10000)
+        f_data = GLOBAL_FAMILY_SYS.families[family_id]
+        
+        # 3. تحديث شريط الحالة العلوي فوراً بالبيانات المربوطة الجديدة
+        self.system_badge.text = f"⚡ Agency: NH  |  {f_data['name']} (Lvl {f_data['level']})"
+        
+        # 4. بث الرسالة التفاعلية المزدوجة في شات الغرفة أمام الجمهور
+        self.add_chat_message("🎖️ FAMILY SUPPORT", f"Leader Omar supported the broadcaster! (+50,000 💎)", "#D4AF37")
+        self.add_chat_message("🔥 FAMILY XP", f"{f_data['name']} gained +10,000 XP! (Total XP: {f_data['xp']:,})", "#29B6F6")
+        
+        if is_leveled_up:
+            self.add_chat_message("🎉 LEVEL UP", f"✨ Congratulation! {f_data['name']} leveled up to Level {f_data['level']}! ✨", "#00E676")
 
 class GlobalStarsLiveApp(MDApp):
     def build(self):
