@@ -1,6 +1,7 @@
 import os
 os.environ['KIVY_NO_ARGS'] = '1'
 import sqlite3
+from datetime import datetime
 from kivymd.app import MDApp
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.clock import Clock
@@ -8,77 +9,83 @@ from kivy.clock import Clock
 DB_PATH = "global_stars_sovereign.db"
 
 # =========================================================================
-# [1. محرك الإدارة والتحكم الأمني - Admin & Moderation Logic Engine]
+# [1. محرك الحماية والتحقق السيادي المطلق - Sovereign Authorization Engine]
 # =========================================================================
-class SovereignAdminController:
+class SovereignAuthCore:
     @staticmethod
-    def toggle_user_immunity(username, immunity_status):
-        """تعديل حالة الحصانة السيادية لمستخدم داخل قاعدة البيانات فوراً"""
+    def grant_vip_or_immunity(actor, target_user, new_rank, immunity_status):
+        """نظام حظر المسببات: لا تمنح رتب VIP أو الحصانة إلا عن طريق Leader_Omar حصراً"""
+        if actor != "Leader_Omar":
+            # توثيق محاولة الاختراق في السجلات فوراً
+            SovereignAuthCore.log_audit_event(
+                "🚨 خرق أمني", actor, "محاولة منح رتبة غير مصرحة", 
+                f"حاول المستخدم {actor} منح {target_user} رتبة {new_rank} وحصانة {immunity_status} تم الرفض تلقائياً!"
+            )
+            return f"❌ خطأ أمني مطلق: الصلاحية مرفوضة! رتب VIP والحصانة لا تمنح إلا بأمر مباشر من القائد Leader_Omar."
+        
+        # تنفيذ الأمر فقط إذا كان الفاعل هو القائد
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute('''
             UPDATE user_profiles 
-            SET immunity = ? 
+            SET rank = ?, immunity = ? 
             WHERE username = ?
-        ''', (immunity_status, username))
+        ''', (new_rank, immunity_status, target_user))
         conn.commit()
         conn.close()
-        status_text = "🔒 تم تفعيل الحصانة المطلقة" if immunity_status == 1 else "🔓 تم رفع الحصانة وتجريده"
-        return f"⚡ [بروتوكول التحكم الأمني]: للحساب {username} -> {status_text} بنجاح في قاعدة البيانات."
+        
+        SovereignAuthCore.log_audit_event(
+            "👑 الإدارة العليا", actor, "منح رتبة سيادية قطعية", 
+            f"قام القائد بمنح {target_user} رتبة {new_rank} مع تفعيل الحصانة."
+        )
+        return f"✨ [بروتوكول سيادي ناجح]: تم اعتماد رتبة {new_rank} للحساب {target_user} بأمر من القائد."
 
     @staticmethod
-    def fetch_all_active_profiles():
-        """جلب كافة الحسابات ورتبها للوحة التحكم"""
+    def log_audit_event(department, actor, action, details):
+        """توثيق العمليات في قاعدة البيانات الدائمة"""
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT username, rank, immunity FROM user_profiles")
-        rows = cursor.fetchall()
-        conn.close()
-        return rows
-
-# =========================================================================
-# [2. واجهة لوحة التحكم والتدقيق - Admin & Moderation Panel UI Screen]
-# =========================================================================
-class AdminPanelScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # جدولة التدقيق الآلي لفحص صلاحيات اللوحة وتحديث البيانات لإنهاء الخلية تلقائياً
-        Clock.schedule_once(self.run_admin_panel_audit, 0.5)
-        
-    def run_admin_panel_audit(self, dt):
-        print("\n--- [👑 سجلات فحص وتدشين لوحة التحكم والتدقيق الأمني الأعلى] ---")
-        print("🖥️ [صلاحية الدخول]: تم التحقق... الحساب النشط هو Leader_Omar. تم فتح لوحة التحكم السيادية.")
-        
-        # 1. استعراض قائمة المستخدمين الحالية داخل لوحة التحكم
-        print("\n📋 [رادار الحسابات النشطة المستدعاة على الشاشة]:")
-        profiles = SovereignAdminController.fetch_all_active_profiles()
-        for user in profiles:
-            immunity_label = "نعم (حصانة سيادية)" if user[2] == 1 else "لا"
-            print(f"   • المستخدم: {user[0]} | الرتبة: {user[1]} | يملك حصانة: {immunity_label}")
-            
-        print("\n⚙️ [عمليات لوحة التحكم الحية - Admin Actions]:")
-        # محاكاة قيامك بتعديل رتبة أو حصانة مستخدم آخر من داخل اللوحة
-        # سنقوم بحقن مستخدم تجريبي أولاً لتبديل حصانته
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO user_profiles VALUES ('Challenger_X', 'avatar.png', 'cover.png', 'مذيع فضي 🥈', 0)")
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute('''
+            INSERT INTO system_audit_logs (timestamp, department, actor, action, details)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (now, department, actor, action, details))
         conn.commit()
         conn.close()
+
+# =========================================================================
+# [2. واجهة فحص الأمان والتحقق من القفل - Sovereign Security UI Screen]
+# =========================================================================
+class SecurityAuditScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        Clock.schedule_once(self.run_sovereign_lock_audit, 0.5)
         
-        # تنفيذ أمر تبديل الحصانة من اللوحة
-        action_msg = SovereignAdminController.toggle_user_immunity("Challenger_X", 1)
-        print(action_msg)
+    def run_sovereign_lock_audit(self, dt):
+        print("\n--- [🛡️ سجلات فحص جدار الحماية وقفل الصلاحيات السيادي للقائد] ---")
         
-        # التحقق من انعكاس الأمر في قاعدة البيانات والواجهة
-        profiles_after = SovereignAdminController.fetch_all_active_profiles()
-        print("\n📊 [تحديث الشاشة اللحظي بعد أمر الإدارة]:")
-        for user in profiles_after:
-            if user[0] == "Challenger_X":
-                immunity_label = "نعم (حصانة سيادية)" if user[2] == 1 else "لا"
-                print(f"   • [محدث حياً] الحساب: {user[0]} | حصانته الحالية في الداتا بيز: {immunity_label}")
-                
+        # المحاكاة الأولى: محاولة مشرف من إدارة البثوث (Admin_S1) منح حصانة ومستوى VIP
+        print("⚡ [فحص المحاولة الأولى - حساب غير مصرح له]:")
+        hack_attempt = SovereignAuthCore.grant_vip_or_immunity("Admin_S1", "Guest_55", "VIP Titan 🛑", 1)
+        print(hack_attempt)
+        
+        # المحاكاة الثانية: صدور الأمر مباشرة من حسابك أنت (Leader_Omar)
+        print("\n👑 [فحص المحاولة الثانية - الحساب السيادي المعتمد]:")
+        legal_action = SovereignAuthCore.grant_vip_or_immunity("Leader_Omar", "Challenger_X", "كبار الشخصيات - تيتان 💎", 1)
+        print(legal_action)
+        
+        # 3. استدعاء شريط سجلات الرقابة للتأكد من رصد وتوثيق المحاولات
+        print("\n📝 [رادار التدقيق الأمني وسجلات الرقابة الفورية - Audit Logs]:")
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT timestamp, department, actor, action, details FROM system_audit_logs ORDER BY id DESC LIMIT 2")
+        logs = cursor.fetchall()
+        for log in logs:
+            print(f"   ⏳ [{log[0]}] -> [{log[1]}] بواسطة ({log[2]}): {log[3]} | تفاصيل: {log[4]}")
+        conn.close()
+        
         print("-------------------------------------------------------------------------")
-        print("🎉 تم حقن لوحة تحكم المشرفين وربطها بالداتا بيز والشبكة بنجاح 100%. إغلاق آمن...")
+        print("🎉 تم حقن قفل التحقق المركزي بنجاح 100% (حصرياً للقائد). إغلاق آمن...")
         MDApp.get_running_app().stop()
 
 class GlobalStarsLiveApp(MDApp):
@@ -86,7 +93,7 @@ class GlobalStarsLiveApp(MDApp):
         self.theme_cls.theme_style = "Dark"
         self.theme_cls.primary_palette = "Amber"
         sm = ScreenManager()
-        sm.add_widget(AdminPanelScreen(name="admin_panel"))
+        sm.add_widget(SecurityAuditScreen(name="security_audit"))
         return sm
 
 if __name__ == "__main__":
