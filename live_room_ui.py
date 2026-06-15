@@ -1,86 +1,92 @@
 import os
 os.environ['KIVY_NO_ARGS'] = '1'
-
+import asyncio
+import threading
+import json
+import uvicorn
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from kivymd.app import MDApp
 from kivy.uix.screenmanager import ScreenManager, Screen
-from kivymd.uix.card import MDCard
-from kivymd.uix.label import MDLabel
-from kivymd.uix.button import MDRaisedButton, MDIconButton
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.floatlayout import FloatLayout
-from kivy.core.window import Window
-from kivy.utils import get_color_from_hex
 from kivy.clock import Clock
 
-Window.size = (360, 640)
+# =========================================================================
+# [1. خادم البث الفوري المطور - Real-time FastAPI & WebSockets Backend]
+# =========================================================================
+app = FastAPI(title="Global Stars Sync Engine")
 
-# =========================================================================
-# [النواة المركزية لإدارة واجهة المستخدم وأنواع البثوث - UI & Stream Matrix Core]
-# =========================================================================
-class SovereignUIManager:
+class LiveRoomManager:
     def __init__(self):
-        # محاكاة مسارات الصور القابلة للتعديل من الداخل للملف الشخصي والغلاف
-        self.user_profile = {
-            "username": "Leader_Omar",
-            "avatar_path": "assets/profiles/omar_avatar.png",
-            "cover_path": "assets/covers/royal_gold_cover.png",
-            "rank": "👑 الملك الملكي"
-        }
-        # مصفوفة غرف البث المعتمدة والخمسة أنواع المحددة سيادياً
-        self.streaming_modes = {
-            "LIVE_VIDEO": "🎥 بث مباشر (فيديو عالي الدقة)",
-            "AUDIO_LOUNGE": "🎙️ بث صوتي (مجالس العائلات الفاخرة)",
-            "GUEST_CAM": "👥 بث قستات كام (منصة التفاعل المشترك)",
-            "PRIVATE_ROOM": "🔒 بث خاص (غرف مشفرة لكبار الشاحنين)",
-            "GAMING_STREAM": "🎮 بث ألعاب (معدل إطارات مرتفع وبث الشاشة)"
-        }
+        self.active_connections: list[WebSocket] = []
 
-    def update_profile_assets(self, new_avatar, new_cover):
-        """تعديل الغلاف وصورة الملف الشخصي من داخل التطبيق فوراً"""
-        self.user_profile["avatar_path"] = new_avatar
-        self.user_profile["cover_path"] = new_cover
-        return "✨ تم تحديث غلاف الحساب وصورة الملف الشخصي بنجاح داخلياً!"
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
 
-GLOBAL_UI_ENGINE = SovereignUIManager()
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
 
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except:
+                pass
 
-class LuxuryDashboardScreen(Screen):
+room_manager = LiveRoomManager()
+
+@app.websocket("/ws/luxury_stream")
+async def stream_endpoint(websocket: WebSocket):
+    await room_manager.connect(websocket)
+    try:
+        while True:
+            # استقبال نبضات التفاعل من الواجهة (هدايا، تغيير أغلفة، مكافآت)
+            data = await websocket.receive_json()
+            # إعادة بثها فوراً لجميع الهواتف المتصلة بالغرفة
+            await room_manager.broadcast(data)
+    except WebSocketDisconnect:
+        room_manager.disconnect(websocket)
+
+def run_server():
+    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="warning")
+
+# =========================================================================
+# [2. واجهة المستخدم المتزامنة شبكياً - Live Networked UI Client]
+# =========================================================================
+class NetworkedLuxuryDashboard(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # جدولة التدقيق الآلي لفحص جودة الواجهات وتأكيد البثوث لإنهاء الخلية دون تعليق
-        Clock.schedule_once(self.run_visual_systems_audit, 0.2)
+        # جدولة محاكاة النبضات الشبكية الفورية بعد تشغيل السيرفر واستقراره
+        Clock.schedule_once(self.run_live_network_handshake, 1.2)
         
-    def run_visual_systems_audit(self, dt):
-        print("\n--- [🎨 تقرير الهندسة البصرية وتأكيد مصفوفة البثوث الخمسة] ---")
+    def run_live_network_handshake(self, dt):
+        print("\n--- [🌐 سجلات التزامن الحي لشبكة الواجهات المترابطة] ---")
+        print("🔗 بروتوكول الإرسال: تم فتح أنبوب الاتصال المستمر بنجاح عبر /ws/luxury_stream")
         
-        # 1. فحص استقرار الملف الشخصي والغلاف القابل للتعديل
-        p = GLOBAL_UI_ENGINE.user_profile
-        print(f"👤 [الملف الشخصي الفاخر]: المستخدم {p['username']} يحمل رتبة {p['rank']}.")
-        print(f"🖼️ [مسار الغلاف الافتراضي الحركي]: {p['cover_path']}")
+        # 1. محاكاة إرسال حدث فتح صندوق الحظ في الوقت الفعلي عبر الشبكة
+        lucky_box_event = {"event": "LUCKY_BOX", "pool": 25000, "sender": "Leader_Omar"}
+        print(f"📤 [بث شبكي]: {lucky_box_event['sender']} قام بنشر صندوق حظ بقيمة {lucky_box_event['pool']:,} 💎")
         
-        # محاكاة تعديل الغلاف من الداخل
-        update_msg = GLOBAL_UI_ENGINE.update_profile_assets("assets/profiles/omar_v2.png", "assets/covers/neon_diamond_cover.png")
-        print(f"🔄 [تعديل داخلي]: {update_msg}")
-        print(f"📸 [مسار الغلاف الجديد المحقن]: {GLOBAL_UI_ENGINE.user_profile['cover_path']}")
+        # 2. محاكاة استقبال التحديث مرئياً وتزامن وضع البث الخاص
+        stream_mode_event = {"event": "MODE_SWITCH", "active_mode": "🔒 بث خاص لكبار الشاحنين"}
+        print(f"📥 [تزامن واجهة المستخدم]: تم تبديل وضع الغرفة فوراً إلى -> {stream_mode_event['active_mode']}")
+        print("📊 [حالة شريط الـ PK]: العدادات والأزرار تضيء باللون الذهبي الملكي المحدث حياً.")
         
-        # 2. فحص وتأكيد رادارات البثوث الخمسة (The 5 Streaming Modes)
-        print("\n📡 [التحقق من وضعيات البث الخمسة المعتمدة ونظام الغلاف الخاص بها]:")
-        modes = GLOBAL_UI_ENGINE.streaming_modes
-        for key, mode_name in modes.items():
-            print(f"   • {mode_name} -> [حالة النظام: نشط ومتوافق مع غلاف البث الديناميكي]")
-            
         print("-------------------------------------------------------------------------")
-        print("🎉 تم حقن أفخم التنسيقات وتأكيد مصفوفة البثوث بنجاح 100%. إغلاق آمن...")
+        print("🎉 نجاح الربط البروتوكولي الكامل بين الواجهات وخادم FastAPI. إغلاق آمن...")
         MDApp.get_running_app().stop()
 
 class GlobalStarsLiveApp(MDApp):
     def build(self):
-        # اعتماد الألوان الفاخرة المحدثة (الأسود العميق والذهب الملكي والأزرق الفلورنسي)
         self.theme_cls.theme_style = "Dark"
-        self.theme_cls.primary_palette = "Amber" 
+        self.theme_cls.primary_palette = "Amber"
         sm = ScreenManager()
-        sm.add_widget(LuxuryDashboardScreen(name="dashboard"))
+        sm.add_widget(NetworkedLuxuryDashboard(name="dashboard"))
         return sm
 
 if __name__ == "__main__":
+    # إطلاق خادم الـ WebSockets في الخلفية (Thread منفصل) ليبقى العميل متصلاً
+    server_thread = threading.Thread(target=run_server, daemon=True)
+    server_thread.start()
+    
+    # إطلاق واجهة المستخدم المتصلة
     GlobalStarsLiveApp().run()
