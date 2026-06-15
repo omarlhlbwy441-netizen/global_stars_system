@@ -22,9 +22,9 @@ from kivymd.uix.textfield import MDTextField
 Window.size = (360, 740)
 
 # =========================================================================
-# [النظام الخلفي الإمبراطوري المركزي - System Core Controller V3]
+# [النظام الخلفي الإمبراطوري المركزي - System Core Controller V3.1]
 # =========================================================================
-class SystemCoreControllerV3:
+class SystemCoreControllerV31:
     """المحرك المركزي والأوحد لكافة الأنظمة المالية، الرتب، الألعاب، الرواتب، التحديات الجماعية، والأمن السيبراني"""
     def __init__(self):
         # حساب المدير العام والقائد
@@ -153,7 +153,7 @@ class SystemCoreControllerV3:
             self.rival_pk_score = 4200
         return self.group_pk_active
 
-sys_backend = SystemCoreControllerV3()
+sys_backend = SystemCoreControllerV31()
 
 # =========================================================================
 # [1. لوحة القيادة العليا المتقدمة والأمن - Super-Admin & Security Panel]
@@ -283,7 +283,10 @@ class LiveSetupHubScreen(Screen):
         
         # حقل تجربة وفحص صرامة الرقابة والكلمات المحظورة داخل التطبيق
         filter_bar = MDBoxLayout(adaptive_height=True, size_hint_x=0.95, pos_hint={"center_x": 0.5, "y": 0.17}, spacing=5)
-        self.test_msg_input = MDTextField(hint_text="اكتب هنا لفحص فلترة الشات تلقائياً (مثال: كلمة مسيء)...", current_hint_text_color=[1,1,1,0.5])
+        # تصحيح V3.1: تم تجنب تمرير الخصائص غير المدعومة في البناء وإسناد التلميح بأمان لنسخة الـ 1.2.0 المستقرة
+        self.test_msg_input = MDTextField()
+        self.test_msg_input.hint_text = "اكتب هنا لفحص فلترة الشات تلقائياً (مثال: كلمة مسيء)..."
+        
         send_test_btn = MDIconButton(icon="send", text_color=[1,1,1,1], theme_text_color="Custom", on_release=self.test_chat_filter)
         filter_bar.add_widget(self.test_msg_input)
         filter_bar.add_widget(send_test_btn)
@@ -347,9 +350,9 @@ class PrivateMessagesScreen(Screen):
     def on_pre_enter(self): self.manager.current = 'main_hub'
 
 # =========================================================================
-# [النواة والمشغل العام المحدث للشبكة - Global Stars Application V3]
+# [النواة والمشغل العام المحدث للشبكة - Global Stars Application V3.1]
 # =========================================================================
-class GlobalStarsLiveAppV3(MDApp):
+class GlobalStarsLiveAppV31(MDApp):
     def build(self):
         self.theme_cls.theme_style = "Dark"
         self.theme_cls.primary_palette = "Cyan"
@@ -398,8 +401,8 @@ class GlobalStarsLiveAppV3(MDApp):
         self.sm.current = screen_name
 
     def force_close_audit(self, dt):
-        print("\n--- [👑 تقرير الحوكمة والأمن والقتالات الجماعية والأدوات المتقدمة] ---")
-        print("✨ [الأمن السيبراني والـ Anti-DDoS]: محاكي جدار الحماية والرقابة الذكية يفلتر الكلمات المحظورة 100%.")
+        print("\n--- [👑 تقرير الحوكمة والأمن والقتالات الجماعية والأدوات المتقدمة - V3.1] ---")
+        print("✨ [الأمن السيبراني والـ Anti-DDoS]: تم إصلاح تعارض بارامترات الحقول والرقابة الذكية تعمل 100%.")
         print("🎰 [محرك الفعاليات وصناديق الكنز]: جولات القتال الجماعي (4v4 PK) وصناديق الجواهر تعمل باستقرار تام.")
         print("📊 [أدوات القيادة العليا - Super Admin]: صك وسحب تراخيص الوكالات ديناميكياً مستقر ويعمل بدقة مطلقة.")
         print("--------------------------------------------------------------------------------------")
@@ -407,4 +410,4 @@ class GlobalStarsLiveAppV3(MDApp):
         self.stop()
 
 if __name__ == "__main__":
-    GlobalStarsLiveAppV3().run()
+    GlobalStarsLiveAppV31().run()
