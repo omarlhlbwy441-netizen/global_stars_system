@@ -1,0 +1,35 @@
+name: Android APK Build Factory (Design Core)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:  # يتيح لك تشغيل البناء يدوياً من واجهة GitHub
+
+jobs:
+  build-android:
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: 📥 جلب كود المنظومة (Checkout)
+        uses: actions/checkout@v4
+
+      - name: ⚙️ إعداد بيئة Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 🛠️ تثبيت الحزم والمكتبات المساعدة لـ Buildozer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          pip install --upgrade Cython==0.29.33 virtualenv buildozer
+
+      - name: 🚀 بناء ملف APK للمنظومة
+        run: buildozer android debug
+
+      - name: 📦 أرشفة ورفع ملف APK الناتج
+        uses: actions/upload-artifact@v4
+        with:
+          name: Global-Stars-System-APK
+          path: bin/*.apk
+          retention-days: 7
