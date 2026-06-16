@@ -1,53 +1,54 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from typing import List
+from kivymd.app import MDApp
+from kivymd.uix.screen import MDScreen
+from kivymd.uix.button import MDRaisedButton
+from kivymd.uix.label import MDLabel
+from kivy.core.window import Window
 
-app = FastAPI(title="Global Stars System - Design Core", version="1.0.0")
+# إعداد حجم الشاشة التقريبي للهاتف (للتجربة)
+Window.size = (360, 640)
 
-# إعدادات CORS للسماح بالاتصال من تطبيقات الواجهة
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+class YummyPartyScreen(MDScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
+        # عنوان اللعبة
+        self.add_widget(
+            MDLabel(
+                text="Yummy Party - لعبة الخضار",
+                halign="center",
+                pos_hint={"center_y": 0.85},
+                font_style="H5"
+            )
+        )
+        
+        # منطقة عجلة الحظ أو العداد الزمني (سيتم برمجتها لاحقاً)
+        self.add_widget(
+            MDLabel(
+                text="العداد الزمني: 23s",
+                halign="center",
+                pos_hint={"center_y": 0.65},
+                theme_text_color="Error"
+            )
+        )
+        
+        # زر مراهنة تجريبي (مثال: الجزر)
+        self.bet_btn = MDRaisedButton(
+            text="مراهنة بـ 10 ذهب (جزر)",
+            pos_hint={"center_x": 0.5, "center_y": 0.4},
+            md_bg_color=(1, 0.5, 0, 1) # لون برتقالي
+        )
+        self.bet_btn.bind(on_release=self.place_bet)
+        self.add_widget(self.bet_btn)
 
-@app.get("/")
-async def root():
-    return {"status": "success", "message": "نواة نظام Global Stars تعمل بكفاءة"}
+    def place_bet(self, instance):
+        # هذه الدالة سترتبط لاحقاً بـ WebSockets لإرسال الرهان للخادم
+        print("تم إرسال الرهان بنجاح إلى الخادم!")
 
-# ==========================================
-# محرك لعبة الخضار (Yummy Party) - اتصال الوقت الفعلي
-# ==========================================
-class GameConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
+class GlobalStarsApp(MDApp):
+    def build(self):
+        self.theme_cls.primary_palette = "BlueGray"
+        self.theme_cls.theme_style = "Dark" # تفعيل الوضع الليلي للمنظومة
+        return YummyPartyScreen()
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def broadcast_game_state(self, message: dict):
-        # بث حالة اللعبة (مثل العد التنازلي 23s، أو نتيجة العجلة) لجميع اللاعبين
-        for connection in self.active_connections:
-            await connection.send_json(message)
-
-game_manager = GameConnectionManager()
-
-@app.websocket("/ws/yummy-party")
-async def websocket_endpoint(websocket: WebSocket):
-    await game_manager.connect(websocket)
-    try:
-        while True:
-            # استقبال رهانات اللاعبين (مثال: رهان على الجزر بقيمة 100 عملة)
-            data = await websocket.receive_json()
-            print(f"تم استلام رهان جديد: {data}")
-            
-            # هنا سيتم لاحقاً معالجة الرهان، التحقق من الرصيد، وتخزينه في PostgreSQL
-            await websocket.send_json({"status": "تم قبول الرهان", "data": data})
-    except WebSocketDisconnect:
-        game_manager.disconnect(websocket)
+if __name__ == "__main__":
+    GlobalStarsApp().run()
