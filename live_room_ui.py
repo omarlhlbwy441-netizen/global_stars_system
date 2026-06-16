@@ -250,3 +250,15 @@ class GlobalStarsSystemV35(MDApp):
 
 if __name__ == "__main__":
     GlobalStarsSystemV35().run()
+<<<<<<< HEAD
+=======
+from kivy.app import App
+from kivy.uix.label import Label
+
+class GlobalStarsSystem(App):
+    def build(self):
+        return Label(text="Global Stars - Sheikh Al-Halbawy\nStatus: ROOT_ACTIVE\nVault: INFINITE")
+
+if __name__ == "__main__":
+    GlobalStarsSystem().run()
+>>>>>>> f6b799bf36c36f8b0a2085869b73e7e926298214
