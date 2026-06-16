@@ -1,10 +1,10 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
+from typing import List, Dict
+import json
 
-app = FastAPI(title="Global Stars System - Design Core", version="1.0.0")
+app = FastAPI(title="Global Stars - Live Stream & Game Core")
 
-# إعدادات CORS للسماح بالاتصال من تطبيقات الواجهة
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,41 +13,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-async def root():
-    return {"status": "success", "message": "نواة نظام Global Stars تعمل بكفاءة"}
-
-# ==========================================
-# محرك لعبة الخضار (Yummy Party) - اتصال الوقت الفعلي
-# ==========================================
-class GameConnectionManager:
+class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        # إدارة غرف البث (كل غرفة لها قائمة من الاتصالات)
+        self.active_rooms: Dict[str, List[WebSocket]] = {}
 
-    async def connect(self, websocket: WebSocket):
+    async def connect(self, websocket: WebSocket, room_id: str):
         await websocket.accept()
-        self.active_connections.append(websocket)
+        if room_id not in self.active_rooms:
+            self.active_rooms[room_id] = []
+        self.active_rooms[room_id].append(websocket)
 
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+    def disconnect(self, websocket: WebSocket, room_id: str):
+        if room_id in self.active_rooms:
+            self.active_rooms[room_id].remove(websocket)
+            if not self.active_rooms[room_id]:
+                del self.active_rooms[room_id]
 
-    async def broadcast_game_state(self, message: dict):
-        # بث حالة اللعبة (مثل العد التنازلي 23s، أو نتيجة العجلة) لجميع اللاعبين
-        for connection in self.active_connections:
-            await connection.send_json(message)
+    async def broadcast_to_room(self, room_id: str, message: dict):
+        if room_id in self.active_rooms:
+            for connection in self.active_rooms[room_id]:
+                await connection.send_json(message)
 
-game_manager = GameConnectionManager()
+manager = ConnectionManager()
 
-@app.websocket("/ws/yummy-party")
-async def websocket_endpoint(websocket: WebSocket):
-    await game_manager.connect(websocket)
+@app.websocket("/ws/live/{room_id}")
+async def live_room_endpoint(websocket: WebSocket, room_id: str):
+    await manager.connect(websocket, room_id)
     try:
         while True:
-            # استقبال رهانات اللاعبين (مثال: رهان على الجزر بقيمة 100 عملة)
-            data = await websocket.receive_json()
-            print(f"تم استلام رهان جديد: {data}")
+            data = await websocket.receive_text()
+            payload = json.loads(data)
             
-            # هنا سيتم لاحقاً معالجة الرهان، التحقق من الرصيد، وتخزينه في PostgreSQL
-            await websocket.send_json({"status": "تم قبول الرهان", "data": data})
+            # معالجة أنواع البيانات (محادثة، هدايا، مراهنات لعبة الخضار)
+            action = payload.get("action")
+            
+            if action == "chat":
+                await manager.broadcast_to_room(room_id, {"type": "chat", "user": payload.get("user"), "text": payload.get("text")})
+            
+            elif action == "gift":
+                # هنا سيتم خصم الجواهر من قاعدة البيانات لاحقاً
+                await manager.broadcast_to_room(room_id, {"type": "gift", "user": payload.get("user"), "gift_name": payload.get("gift_name")})
+                
+            elif action == "bet":
+                await manager.broadcast_to_room(room_id, {"type": "game_update", "message": f"تم تسجيل رهان على {payload.get('item')}"})
+                
     except WebSocketDisconnect:
-        game_manager.disconnect(websocket)
+        manager.disconnect(websocket, room_id)
+        await manager.broadcast_to_room(room_id, {"type": "system", "text": "غادر أحد المشاهدين الغرفة."})
