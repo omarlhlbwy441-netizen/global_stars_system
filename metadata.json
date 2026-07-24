@@ -1,0 +1,6 @@
+{
+  "name": "Clean Minimalism Transaction Hub",
+  "description": "An ultra-sleek, minimal transaction and status management application built with the Clean Minimalism aesthetic.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
